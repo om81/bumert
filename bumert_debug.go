@@ -83,8 +83,17 @@ func (a *Assertion) NotBeNil() *Assertion {
 }
 
 // TrueFn checks if the provided function returns true.
-// The original asserted value (from Should()) is ignored by this check.
+// The original asserted value (from Should()) is not directly used by this check,
+// but can be accessed within the function's closure if needed.
 // Panics if the function returns false in debug builds.
+//
+// Example:
+//
+//	complexState := setupComplexState()
+//	bumert.Should(complexState).TrueFn(func() bool {
+//	    // Perform complex validation on complexState or related variables
+//	    return isValid(complexState)
+//	})
 func (a *Assertion) TrueFn(f func() bool) *Assertion {
 	if !f() {
 		failAssertion("function returned false")
@@ -505,8 +514,22 @@ func (a *Assertion) NotBeError() *Assertion {
 }
 
 // BeErrorOfType checks if the asserted value is an error that matches the type of the target.
-// target must be a pointer to a variable of the desired error type (e.g., var target *os.PathError).
+// It uses errors.As for comparison, meaning it will match if the error is of the target type
+// or wraps an error of the target type.
+// target must be a non-nil pointer to a variable of the desired error type
+// (e.g., var target *os.PathError; pass &target). The variable will be populated
+// by errors.As if a match is found.
 // Panics if the value is not an error or does not match the target type.
+//
+// Example:
+//
+//	var pathErr *os.PathError // Declare variable to potentially hold the specific error
+//	err := someFunctionThatMightFail()
+//	bumert.Should(err).BeErrorOfType(&pathErr) // Pass the address of the pointer
+//	// If the assertion passed and pathErr is now non-nil, it holds the specific error
+//	if pathErr != nil {
+//	  fmt.Println("Specific path error:", pathErr.Path)
+//	}
 func (a *Assertion) BeErrorOfType(target any) *Assertion {
 	err, ok := a.value.(error)
 	if !ok || isNil(err) {

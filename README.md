@@ -1,8 +1,10 @@
 # bumert
 
-`bumert` is a simple, fluent assertion library for Go.
+`bumert` is a simple, fluent assertion library for Go that does nothing... in production builds.
 
 **Core Feature:** Assertions only execute and are only compiled into your binary when the `debug` build tag (or the `bumert` build tag) is specified. In standard/production builds (when the tag is _not_ provided), the assertion calls become no-ops, incurring zero runtime overhead.
+
+> Yes I know, The name could have been **arsert**
 
 ## Installation
 
@@ -38,41 +40,32 @@ func main() {
 	process(&val, 5)
 
 	var nilData *string
-	// This would panic if compiled with `-tags debug`:
-	// bumert.Should(nilData).NotBeNil()
-
-	// This would panic if compiled with `-tags debug`:
-	// bumert.Should(0).BeGreaterThan(0)
+	// These would panic if compiled with `-tags debug`
+	bumert.Should(nilData).NotBeNil()
+	bumert.Should(0).BeGreaterThan(0)
+	// but they would be no-ops in production builds
+	// and/or if no build tags are provided
 }
 ```
 
-### Direct Assertion Functions (Alias Package)
+### Legacy API (Recommended for oldtimers)
 
-You can optionally use the `should` sub-package for direct assertion functions:
+Use the `Assert` function directly:
 
 ```go
-package main
+bumert.Assert(false)
+```
 
-import (
-	"fmt"
-	"github.com/deblasis/bumert/should"
-)
+or to provide a custom message:
 
-func process(data *string, count int) {
-	// These assertions only run if compiled with `-tags debug`
-	should.ShouldNotBeNil(data)
-	should.ShouldNotBeEmpty(*data)
-	should.ShouldBeGreaterThan(count, 0)
-
-	fmt.Println("Processing:", *data, "Count:", count)
-}
-
-// ... main function similar to above ...
+```go
+truth := stocksOnlyGoUp()
+bumert.Assertf(truth, "Stocks only go up, right?")
 ```
 
 ## Conditional Compilation: Enabling Assertions (`debug` Tag)
 
-`bumert` relies on Go's build tag system. By default (without any special tags), all assertion calls are effectively removed during compilation. They have **zero performance impact** on your production builds.
+`bumert` relies on Go's build tag system. By default (without any special tags), all assertion calls are effectively removed during compilation. They have basically **zero performance impact** on your production builds.
 
 To **enable** assertions, you must include the `debug` build tag:
 
@@ -88,7 +81,7 @@ To **enable** assertions, you must include the `debug` build tag:
 
 ## Panic Behavior
 
-When the `debug` tag is enabled, a **failed assertion will cause a panic**. This is intentional and follows the common pattern for assertion libraries in Go (and other languages). It immediately halts execution at the point of the violated assumption during development or debugging, making issues easy to spot. The panic message includes the file and line number of the failed assertion.
+When the `debug` tag is enabled, a **failed assertion will cause a panic**. This is intentional and follows the common pattern for assertion libraries in Go (and other languages). It immediately halts execution at the point of the violated assumption during development or debugging, making issues easy to spot. The panic message includes the file and line number of the failed assertion, along with the failure reason (e.g., "Expected <foo> to be greater than <bar>").
 
 In production builds (without the `debug` tag), since the assertions are compiled out, they **cannot** panic.
 
@@ -126,49 +119,49 @@ These are chained off the `Should(value)` function:
 
 #### General
 
-- `Should(value).BeNil()` / `should.ShouldBeNil(value)`
-- `Should(value).NotBeNil()` / `should.ShouldNotBeNil(value)`
-- `Should(value).BeEqual(expected)` / `should.ShouldBeEqual(value, expected)` (uses `reflect.DeepEqual`)
-- `Should(value).NotBeEqual(unexpected)` / `should.ShouldNotBeEqual(value, unexpected)` (uses `reflect.DeepEqual`)
-- `Should(value).BeZero()` / `should.ShouldBeZero(value)` (checks for the type's zero value)
-- `Should(value).NotBeZero()` / `should.ShouldNotBeZero(value)`
+- `Should(value).BeNil()`
+- `Should(value).NotBeNil()`
+- `Should(value).BeEqual(expected)` (uses `reflect.DeepEqual`)
+- `Should(value).NotBeEqual(unexpected)` (uses `reflect.DeepEqual`)
+- `Should(value).BeZero()` (checks against the type's zero value: `0`, `""`, `nil`, `false`, etc.)
+- `Should(value).NotBeZero()` (checks if the value is not the type's zero value)
 
 ### Booleans
 
-- `Should(value).BeTrue()` / `should.ShouldBeTrue(value)`
-- `Should(value).BeFalse()` / `should.ShouldBeFalse(value)`
+- `Should(value).BeTrue()`
+- `Should(value).BeFalse()`
 
 ### Collections (Slices, Arrays, Maps, Strings, Channels)
 
-- `Should(value).BeEmpty()` / `should.ShouldBeEmpty(value)` (nil or zero length)
-- `Should(value).NotBeEmpty()` / `should.ShouldNotBeEmpty(value)`
-- `Should(value).HaveLen(expectedLen)` / `should.ShouldHaveLen(value, expectedLen)`
+- `Should(value).BeEmpty()` (nil or zero length)
+- `Should(value).NotBeEmpty()`
+- `Should(value).HaveLen(expectedLen)`
 
 ### Slices/Arrays/Strings
 
-- `Should(value).Contain(element)` / `should.ShouldContain(value, element)` (uses `reflect.DeepEqual` for elements, `strings.Contains` for strings)
-- `Should(value).NotContain(element)` / `should.ShouldNotContain(value, element)`
+- `Should(value).Contain(element)` (uses `reflect.DeepEqual` for elements, `strings.Contains` for strings)
+- `Should(value).NotContain(element)`
 
 ### Strings
 
-- `Should(value).ContainSubstring(substring)` / `should.ShouldContainSubstring(value, substring)`
-- `Should(value).HavePrefix(prefix)` / `should.ShouldHavePrefix(value, prefix)`
-- `Should(value).HaveSuffix(suffix)` / `should.ShouldHaveSuffix(value, suffix)`
+- `Should(value).ContainSubstring(substring)`
+- `Should(value).HavePrefix(prefix)`
+- `Should(value).HaveSuffix(suffix)`
 
 ### Numbers (Integers, Floats)
 
-- `Should(value).BeGreaterThan(expected)` / `should.ShouldBeGreaterThan(value, expected)`
-- `Should(value).BeLessThan(expected)` / `should.ShouldBeLessThan(value, expected)`
-- `Should(value).BeGreaterThanOrEqualTo(expected)` / `should.ShouldBeGreaterThanOrEqualTo(value, expected)`
-- `Should(value).BeLessThanOrEqualTo(expected)` / `should.ShouldBeLessThanOrEqualTo(value, expected)`
+- `Should(value).BeGreaterThan(expected)`
+- `Should(value).BeLessThan(expected)`
+- `Should(value).BeGreaterThanOrEqualTo(expected)`
+- `Should(value).BeLessThanOrEqualTo(expected)`
 
 ### Errors
 
-- `Should(value).BeError()` / `should.ShouldBeError(value)` (checks `err != nil` and is `error` type)
-- `Should(value).NotBeError()` / `should.ShouldNotBeError(value)` (checks `err == nil` or is not `error` type)
-- `Should(value).BeErrorOfType(target)` / `should.ShouldBeErrorOfType(value, target)` (uses `errors.As`, `target` must be `*MyErrorType`)
-- `Should(value).BeErrorWithMessage(substring)` / `should.ShouldBeErrorWithMessage(value, substring)`
+- `Should(value).BeError()` (checks `err != nil` and is `error` type)
+- `Should(value).NotBeError()` (checks `err == nil` or is not `error` type)
+- `Should(value).BeErrorOfType(target)` (uses `errors.As`, `target` must be `*MyErrorType`)
+- `Should(value).BeErrorWithMessage(substring)`
 
 ### Functions
 
-- `Should(value).TrueFn(func() bool)` / `should.ShouldTrueFn(f)` (Asserts the function `f` returns true. The initial `value` is ignored.)
+- `Should(value).TrueFn(func() bool)` (Asserts the function `f` returns true. The initial `value` is ignored.)
