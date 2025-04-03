@@ -8,8 +8,6 @@
 
 ```bash
 go get github.com/deblasis/bumert
-# Also get the optional alias package:
-go get github.com/deblasis/bumert/should
 ```
 
 ## Usage
