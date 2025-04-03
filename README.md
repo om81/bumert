@@ -12,6 +12,10 @@
 go get github.com/deblasis/bumert
 ```
 
+## Documentation
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/deblasis/bumert.svg)](https://pkg.go.dev/github.com/deblasis/bumert)
+
 ## Usage
 
 ### Fluent API (Recommended)
